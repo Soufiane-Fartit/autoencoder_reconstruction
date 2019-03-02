@@ -48,27 +48,12 @@ def sampling(args):
     epsilon = K.random_normal(shape=(batch, dim))
     return z_mean + K.exp(0.5 * z_log_var) * epsilon
 
-
-"""
-# MNIST dataset
-(X_train, Y_train), (X_test, Y_test) = mnist.load_data()
-X_train = np.array(X_train)
-X_test = np.array(X_test)
-X_train.shape
-
-image_Size = X_train.shape[1]
-X_train.shape[1]
-image_Size
-original_Dim = image_Size * image_Size
-X_train = np.reshape(X_train, [-1, original_Dim])
-"""
 PATH = os.getcwd()
 
 train_path = PATH+'/fruits/fruits-360/train'
 train_batch = os.listdir(train_path)
 x_train = []
 x_test = []
-dada = [0 for i in range(6006)]
 DATA=[]
 # if data are in form of images
 for sample in train_batch:
@@ -88,12 +73,8 @@ x_train, x_test, _, __ = train_test_split(DATA, dada, test_size=0.20)
 x_train = np.array(x_train)
 x_test = np.array(x_test)
 
-x_train.shape
 image_size = x_train.shape[1]
-image_size
-original_dim = image_size * image_size
-#x_train = np.reshape(x_train, [-1, original_dim])
-#x_test = np.reshape(x_test, [-1, original_dim])
+
 x_train = x_train.astype('float32') / 255
 x_test = x_test.astype('float32') / 255
 
@@ -101,8 +82,7 @@ x_train.shape
 x_test.shape
 
 # network parameters
-input_shape = (original_dim, )
-input_shape
+
 intermediate_dim = 512
 batch_size = 1
 latent_dim = 16
@@ -134,6 +114,7 @@ z_mean = Dense(latent_dim, name='z_mean', input_shape=(intermediate_dim,))(y)
 z_mean.shape
 z_log_var = Dense(latent_dim, name='z_log_var', input_shape=(intermediate_dim,))(y)
 z_log_var.shape
+
 # use reparameterization trick to push the sampling out as input
 # note that "output_shape" isn't necessary with the TensorFlow backend
 z = Lambda(sampling, output_shape=(latent_dim,), name='z')([z_mean, z_log_var])
@@ -182,25 +163,9 @@ outputs = decoder(encoder(inputs)[2])
 vae = Model(inputs, outputs, name='vae_mlp')
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    help_ = "Load h5 model trained weights"
-    parser.add_argument("-w", "--weights", help=help_)
-    help_ = "Use mse loss instead of binary cross entropy (default)"
-    parser.add_argument("-m",
-                        "--mse",
-                        help=help_, action='store_true')
-    args = parser.parse_args()
-    models = (encoder, decoder)
-    #y_test = x_test
-    data = (x_test, y_test)
 
-    # VAE loss = mse_loss or xent_loss + kl_loss
-    if args.mse:
-        reconstruction_loss = mse(inputs, outputs)
-    else:
-        reconstruction_loss = binary_crossentropy(inputs,
-                                                  outputs)
-
+    reconstruction_loss = mse(inputs, outputs)
+    
     reconstruction_loss *= original_dim
     kl_loss = 1 + z_log_var - K.square(z_mean) - K.exp(z_log_var)
     kl_loss = K.sum(kl_loss, axis=-1)
@@ -215,18 +180,15 @@ if __name__ == '__main__':
                to_file='vae_mlp.png',
                show_shapes=True)
 
-    if args.weights:
-        vae.load_weights('fruits_weights.h5')
-    else:
-        # train the autoencoder
-        vae.fit(x_train,
+# train the autoencoder
+    vae.fit(x_train,
                 epochs=epochs,
                 batch_size=batch_size,
                 validation_data=(x_test, None))
-        vae.save('new_fruits.h5')
-        encoder.save('new_fruits_encoder.h5')
-        decoder.save('new_fruits_decoder.h5')
-        vae.save_weights('new_fruits_weights.h5')
+    vae.save('new_fruits.h5')
+    encoder.save('new_fruits_encoder.h5')
+    decoder.save('new_fruits_decoder.h5')
+    vae.save_weights('new_fruits_weights.h5')
 
 
 
@@ -255,30 +217,3 @@ plt.imshow(x_test[39].reshape(128, 128))
 plt.imshow(decoded_imgs[39].reshape(128, 128))
 plt.imshow(decoded_imgS[21].reshape(128, 128))
 
-
-
-
-
-
-
-
-#############################################
-#############################################
-
-img = cv2.imread('FramesPos/2014_05_01_22_25_17_545000_.tif')
-img = cv2.imread('data/test/2014_05_01_22_07_32_277000_.tif')
-img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-img = cv2.resize(img, (470, 470))
-img = img.flatten()
-img = np.array([img])
-img = img/255
-
-coded = encoder.predict(img)
-predicted = decoder.predict(coded[2])
-
-
-plt.imshow(img[0].reshape(470, 470))
-plt.imshow(predicted[0].reshape(470, 470))
-x_test[50].shape
-img[0].shape
-coded.size
